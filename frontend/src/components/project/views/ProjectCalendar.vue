@@ -319,8 +319,14 @@ function filterSubtasks(task: ITask, noDueDateIds: Set<number>): ITask {
 
 const noDueDateTasks = computed(() => {
 	const noDueDateIds = new Set(tasks.value.filter(t => !t.dueDate).map(t => t.id))
+	const taskIds = new Set(tasks.value.map(t => t.id))
 	return tasks.value
-		.filter(t => !t.dueDate && !t.parentTaskId)
+		.filter(t => {
+			if (t.dueDate) return false
+			// Hide if a parent task is also in this view (same logic as shouldShowTaskInListView)
+			const parentIds = t.relatedTasks?.parenttask?.map(p => p.id) ?? []
+			return parentIds.length === 0 || !parentIds.some(id => taskIds.has(id))
+		})
 		.map(t => filterSubtasks(t, noDueDateIds))
 })
 
