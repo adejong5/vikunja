@@ -148,26 +148,14 @@
 					<h3 class="no-due-date-section__title">
 						{{ $t('project.calendar.noDueDate') }}
 					</h3>
-					<ul class="calendar-day-panel__task-list">
-						<li
-							v-for="task in noDueDateTasks"
-							:key="task.id"
-							class="calendar-day-panel__task"
-						>
-							<input
-								type="checkbox"
-								:checked="task.done"
-								@change="toggleDone(task)"
-							/>
-							<span
-								class="calendar-day-panel__task-title"
-								:class="{'is-done': task.done}"
-								@click="openTask(task)"
-							>
-								{{ task.title }}
-							</span>
-						</li>
-					</ul>
+					<SingleTaskInProject
+						v-for="task in noDueDateTasks"
+						:key="task.id"
+						:the-task="task"
+						:all-tasks="tasks"
+						:can-mark-as-done="canWrite"
+						@task-updated="loadTasks()"
+					/>
 				</div>
 			</div>
 		</template>
@@ -192,6 +180,7 @@ import TaskModel from '@/models/task'
 
 import ProjectWrapper from '@/components/project/ProjectWrapper.vue'
 import XButton from '@/components/input/Button.vue'
+import SingleTaskInProject from '@/components/tasks/partials/SingleTaskInProject.vue'
 
 const props = defineProps<{
 	projectId: IProject['id'],
@@ -311,7 +300,7 @@ function tasksForDay(date: Date): ITask[] {
 }
 
 const noDueDateTasks = computed(() =>
-	tasks.value.filter(t => !t.dueDate),
+	tasks.value.filter(t => !t.dueDate && !t.parentTaskId),
 )
 
 // — Day selection —
