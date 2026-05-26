@@ -10,19 +10,21 @@
 				<div class="calendar-nav">
 					<XButton
 						variant="secondary"
-						icon="chevron-left"
-						:aria-label="$t('misc.previous')"
+						icon="angle-left"
 						@click="prevMonth"
-					/>
+					>
+						{{ $t('misc.previous') }}
+					</XButton>
 					<span class="calendar-nav__title">
 						{{ monthTitle }}
 					</span>
 					<XButton
 						variant="secondary"
-						icon="chevron-right"
-						:aria-label="$t('misc.next')"
+						icon="angle-right"
 						@click="nextMonth"
-					/>
+					>
+						{{ $t('misc.next') }}
+					</XButton>
 					<XButton
 						variant="secondary"
 						class="mls-2"
@@ -137,6 +139,36 @@
 						</li>
 					</ul>
 				</div>
+
+				<!-- No due date tasks -->
+				<div
+					v-if="noDueDateTasks.length > 0"
+					class="no-due-date-section"
+				>
+					<h3 class="no-due-date-section__title">
+						{{ $t('project.calendar.noDueDate') }}
+					</h3>
+					<ul class="calendar-day-panel__task-list">
+						<li
+							v-for="task in noDueDateTasks"
+							:key="task.id"
+							class="calendar-day-panel__task"
+						>
+							<input
+								type="checkbox"
+								:checked="task.done"
+								@change="toggleDone(task)"
+							/>
+							<span
+								class="calendar-day-panel__task-title"
+								:class="{'is-done': task.done}"
+								@click="openTask(task)"
+							>
+								{{ task.title }}
+							</span>
+						</li>
+					</ul>
+				</div>
 			</div>
 		</template>
 	</ProjectWrapper>
@@ -229,7 +261,6 @@ const calendarCells = computed<CalendarCell[]>(() => {
 	const firstDay = new Date(year, month, 1)
 	const lastDay = new Date(year, month + 1, 0)
 
-	// Start grid on Sunday
 	const startOffset = firstDay.getDay()
 	const cells: CalendarCell[] = []
 
@@ -278,6 +309,10 @@ const tasksByDay = computed(() => {
 function tasksForDay(date: Date): ITask[] {
 	return tasksByDay.value.get(dayKey(date)) ?? []
 }
+
+const noDueDateTasks = computed(() =>
+	tasks.value.filter(t => !t.dueDate),
+)
 
 // — Day selection —
 const selectedDate = ref<Date | null>(null)
@@ -471,6 +506,20 @@ async function toggleDone(task: ITask) {
 		&:hover {
 			text-decoration: underline;
 		}
+	}
+}
+
+.no-due-date-section {
+	border: 1px solid var(--grey-200);
+	border-radius: var(--radius);
+	padding: 1rem;
+	background: var(--white);
+
+	&__title {
+		font-size: 1rem;
+		font-weight: 600;
+		margin-bottom: .75rem;
+		color: var(--grey-600);
 	}
 }
 </style>

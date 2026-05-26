@@ -527,6 +527,7 @@
       "title": "Calendar",
       "today": "Today",
       "noTasks": "No tasks due on this day",
+      "noDueDate": "No Due Date",
       "addTask": "Add task for {date}",
       "weekdays": {
         "0": "Sun",
