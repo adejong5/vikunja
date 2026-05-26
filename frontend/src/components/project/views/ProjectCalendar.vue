@@ -152,7 +152,7 @@
 						v-for="task in noDueDateTasks"
 						:key="task.id"
 						:the-task="task"
-						:all-tasks="noDueDateTasks"
+						:all-tasks="allNoDueDateTasksFiltered"
 						:can-mark-as-done="canWrite"
 						@task-updated="loadTasks()"
 					/>
@@ -317,18 +317,30 @@ function filterSubtasks(task: ITask, noDueDateIds: Set<number>): ITask {
 	}
 }
 
-const noDueDateTasks = computed(() => {
+// All task IDs that appear as a subtask of some other task in this view.
+const subtaskIdsInView = computed(() => {
+	const ids = new Set<number>()
+	for (const task of tasks.value) {
+		for (const s of task.relatedTasks?.subtask ?? []) {
+			ids.add(s.id)
+		}
+	}
+	return ids
+})
+
+// All no-due-date tasks with their subtask lists pre-filtered to no-due-date only.
+// Used as the allTasks lookup pool for SingleTaskInProject.
+const allNoDueDateTasksFiltered = computed(() => {
 	const noDueDateIds = new Set(tasks.value.filter(t => !t.dueDate).map(t => t.id))
-	const taskIds = new Set(tasks.value.map(t => t.id))
 	return tasks.value
-		.filter(t => {
-			if (t.dueDate) return false
-			// Hide if a parent task is also in this view (same logic as shouldShowTaskInListView)
-			const parentIds = t.relatedTasks?.parenttask?.map(p => p.id) ?? []
-			return parentIds.length === 0 || !parentIds.some(id => taskIds.has(id))
-		})
+		.filter(t => !t.dueDate)
 		.map(t => filterSubtasks(t, noDueDateIds))
 })
+
+// Only the top-level entries for the v-for — tasks that are not a subtask of anything.
+const noDueDateTasks = computed(() =>
+	allNoDueDateTasksFiltered.value.filter(t => !subtaskIdsInView.value.has(t.id)),
+)
 
 // — Day selection —
 const selectedDate = ref<Date | null>(null)
