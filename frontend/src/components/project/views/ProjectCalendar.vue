@@ -152,7 +152,7 @@
 						v-for="task in noDueDateTasks"
 						:key="task.id"
 						:the-task="task"
-						:all-tasks="tasks"
+						:all-tasks="noDueDateTasks"
 						:can-mark-as-done="canWrite"
 						@task-updated="loadTasks()"
 					/>
@@ -299,9 +299,30 @@ function tasksForDay(date: Date): ITask[] {
 	return tasksByDay.value.get(dayKey(date)) ?? []
 }
 
-const noDueDateTasks = computed(() =>
-	tasks.value.filter(t => !t.dueDate && !t.parentTaskId),
-)
+// Strip subtasks-with-due-dates from relatedTasks recursively so
+// SingleTaskInProject only nests tasks that also have no due date.
+function filterSubtasks(task: ITask, noDueDateIds: Set<number>): ITask {
+	const subtasks = task.relatedTasks?.subtask ?? []
+	return {
+		...task,
+		relatedTasks: {
+			...task.relatedTasks,
+			subtask: subtasks
+				.filter(s => noDueDateIds.has(s.id))
+				.map(s => {
+					const full = tasks.value.find(t => t.id === s.id)
+					return full ? filterSubtasks(full, noDueDateIds) : s
+				}),
+		},
+	}
+}
+
+const noDueDateTasks = computed(() => {
+	const noDueDateIds = new Set(tasks.value.filter(t => !t.dueDate).map(t => t.id))
+	return tasks.value
+		.filter(t => !t.dueDate && !t.parentTaskId)
+		.map(t => filterSubtasks(t, noDueDateIds))
+})
 
 // — Day selection —
 const selectedDate = ref<Date | null>(null)
