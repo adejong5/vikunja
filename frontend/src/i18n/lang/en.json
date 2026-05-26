@@ -523,6 +523,21 @@
       "bucketLimitReached": "You have reached the bucket limit. Remove tasks or increase the limit to add new tasks.",
       "bucketOptions": "Bucket options"
     },
+    "calendar": {
+      "title": "Calendar",
+      "today": "Today",
+      "noTasks": "No tasks due on this day",
+      "addTask": "Add task for {date}",
+      "weekdays": {
+        "0": "Sun",
+        "1": "Mon",
+        "2": "Tue",
+        "3": "Wed",
+        "4": "Thu",
+        "5": "Fri",
+        "6": "Sat"
+      }
+    },
     "pseudo": {
       "favorites": {
         "title": "Favorites"
