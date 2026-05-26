@@ -38,6 +38,8 @@ func (p *ProjectViewKind) MarshalJSON() ([]byte, error) {
 		return []byte(`"table"`), nil
 	case ProjectViewKindKanban:
 		return []byte(`"kanban"`), nil
+	case ProjectViewKindCalendar:
+		return []byte(`"calendar"`), nil
 	}
 
 	return []byte(`null`), nil
@@ -59,6 +61,8 @@ func (p *ProjectViewKind) UnmarshalJSON(bytes []byte) error {
 		*p = ProjectViewKindTable
 	case "kanban":
 		*p = ProjectViewKindKanban
+	case "calendar":
+		*p = ProjectViewKindCalendar
 	default:
 		return fmt.Errorf("unknown project view kind: %s", value)
 	}
@@ -75,6 +79,7 @@ const (
 	ProjectViewKindGantt
 	ProjectViewKindTable
 	ProjectViewKindKanban
+	ProjectViewKindCalendar
 )
 
 type BucketConfigurationModeKind int
@@ -136,7 +141,7 @@ type ProjectView struct {
 	// The project this view belongs to
 	ProjectID int64 `xorm:"not null index" json:"project_id" param:"project"`
 	// The kind of this view. Can be `list`, `gantt`, `table` or `kanban`.
-	ViewKind ProjectViewKind `xorm:"not null" json:"view_kind" swaggertype:"string" enums:"list,gantt,table,kanban"`
+	ViewKind ProjectViewKind `xorm:"not null" json:"view_kind" swaggertype:"string" enums:"list,gantt,table,kanban,calendar"`
 
 	// The filter query to match tasks by. Check out https://vikunja.io/docs/filters for a full explanation.
 	Filter *TaskCollection `xorm:"json null default null" query:"filter" json:"filter"`
