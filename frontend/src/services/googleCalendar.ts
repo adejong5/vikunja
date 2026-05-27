@@ -1,4 +1,4 @@
-import {HTTPFactory} from '@/helpers/fetcher'
+import {AuthenticatedHTTPFactory} from '@/helpers/fetcher'
 
 export interface GoogleCalendarStatus {
 	enabled: boolean
@@ -13,8 +13,17 @@ export interface GoogleCalendarSettings {
 	showVikunjaInGoogle: boolean
 }
 
+export interface GoogleCalendarEvent {
+	id: string
+	title: string
+	start: string   // ISO 8601
+	end: string     // ISO 8601
+	allDay: boolean
+	calendarName: string
+}
+
 export default class GoogleCalendarService {
-	private http = HTTPFactory()
+	private http = AuthenticatedHTTPFactory()
 
 	async getStatus(): Promise<GoogleCalendarStatus> {
 		const {data} = await this.http.get<GoogleCalendarStatus>('/user/settings/google')
@@ -32,5 +41,13 @@ export default class GoogleCalendarService {
 
 	async unlink(): Promise<void> {
 		await this.http.delete('/user/settings/google')
+	}
+
+	async getEvents(projectId: number, viewId: number, month: string): Promise<GoogleCalendarEvent[]> {
+		const {data} = await this.http.get<GoogleCalendarEvent[]>(
+			`/projects/${projectId}/views/${viewId}/google-events`,
+			{params: {month}},
+		)
+		return data ?? []
 	}
 }

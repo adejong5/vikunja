@@ -57,20 +57,20 @@
 						<span class="calendar-grid__day-number">{{ cell.date.getDate() }}</span>
 						<div class="calendar-grid__tasks">
 							<span
-								v-for="task in tasksForDay(cell.date).slice(0, 3)"
-								:key="task.id"
+								v-for="item in cellItemsForDay(cell.date).slice(0, 3)"
+								:key="item.id"
 								class="calendar-grid__task-chip"
-								:class="{'is-done': task.done}"
-								:title="task.title"
-								@click.stop="openTask(task)"
+								:class="{'is-done': item.done, 'is-google': item.type === 'google'}"
+								:title="item.title"
+								@click.stop="item.taskData ? openTask(item.taskData) : undefined"
 							>
-								{{ task.title }}
+								{{ item.title }}
 							</span>
 							<span
-								v-if="tasksForDay(cell.date).length > 3"
+								v-if="cellItemsForDay(cell.date).length > 3"
 								class="calendar-grid__task-chip is-overflow"
 							>
-								+{{ tasksForDay(cell.date).length - 3 }}
+								+{{ cellItemsForDay(cell.date).length - 3 }}
 							</span>
 						</div>
 					</div>
@@ -112,7 +112,7 @@
 					</div>
 
 					<p
-						v-if="tasksForDay(selectedDate).length === 0"
+						v-if="tasksForDay(selectedDate).length === 0 && googleEventsForDay(selectedDate).length === 0"
 						class="has-text-centered mbs-4"
 					>
 						{{ $t('project.calendar.noTasks') }}
@@ -135,6 +135,24 @@
 								@click="openTask(task)"
 							>
 								{{ task.title }}
+							</span>
+						</li>
+					</ul>
+
+					<ul
+						v-if="googleEventsForDay(selectedDate).length > 0"
+						class="calendar-day-panel__task-list mbs-4"
+					>
+						<li
+							v-for="event in googleEventsForDay(selectedDate)"
+							:key="event.id"
+							class="calendar-day-panel__task"
+						>
+							<span class="calendar-day-panel__google-badge">
+								{{ $t('project.calendar.googleSource') }}
+							</span>
+							<span class="calendar-day-panel__task-title">
+								{{ event.title }}
 							</span>
 						</li>
 					</ul>
@@ -163,7 +181,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed, ref} from 'vue'
+import {computed, ref, watch} from 'vue'
 import {useRouter} from 'vue-router'
 
 import type {IProject} from '@/modelTypes/IProject'
@@ -172,11 +190,14 @@ import type {ITask} from '@/modelTypes/ITask'
 
 import {useTaskList} from '@/composables/useTaskList'
 import {useBaseStore} from '@/stores/base'
+import {useConfigStore} from '@/stores/config'
 import {PERMISSIONS} from '@/constants/permissions'
 import {formatDateLong} from '@/helpers/time/formatDate'
 
 import TaskService from '@/services/task'
 import TaskModel from '@/models/task'
+import GoogleCalendarService from '@/services/googleCalendar'
+import type {GoogleCalendarEvent} from '@/services/googleCalendar'
 
 import ProjectWrapper from '@/components/project/ProjectWrapper.vue'
 import XButton from '@/components/input/Button.vue'
@@ -190,7 +211,9 @@ const props = defineProps<{
 
 const router = useRouter()
 const baseStore = useBaseStore()
+const configStore = useConfigStore()
 const canWrite = computed(() => baseStore.currentProject?.maxPermission > PERMISSIONS.READ)
+const googleCalendarEnabled = computed(() => configStore.googleCalendarEnabled)
 
 const {tasks, loadTasks} = useTaskList(
 	() => props.projectId,
@@ -382,6 +405,73 @@ async function toggleDone(task: ITask) {
 	await taskService.update(new TaskModel({...task, done: !task.done}))
 	await loadTasks()
 }
+
+// — Google Calendar events —
+interface CalendarDisplayItem {
+	type: 'task' | 'google'
+	id: string | number
+	title: string
+	done?: boolean
+	taskData?: ITask
+}
+
+const googleService = new GoogleCalendarService()
+const googleEvents = ref<GoogleCalendarEvent[]>([])
+
+const googleEventsByDay = computed(() => {
+	const map = new Map<string, GoogleCalendarEvent[]>()
+	for (const event of googleEvents.value) {
+		const start = new Date(event.start)
+		if (event.allDay) {
+			const end = new Date(event.end)
+			const cur = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+			const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate())
+			while (cur < endDay) {
+				const key = dayKey(cur)
+				if (!map.has(key)) map.set(key, [])
+				map.get(key)!.push(event)
+				cur.setDate(cur.getDate() + 1)
+			}
+		} else {
+			const key = dayKey(start)
+			if (!map.has(key)) map.set(key, [])
+			map.get(key)!.push(event)
+		}
+	}
+	return map
+})
+
+function googleEventsForDay(date: Date): GoogleCalendarEvent[] {
+	return googleEventsByDay.value.get(dayKey(date)) ?? []
+}
+
+function cellItemsForDay(date: Date): CalendarDisplayItem[] {
+	const taskItems: CalendarDisplayItem[] = tasksForDay(date).map(t => ({
+		type: 'task' as const,
+		id: t.id,
+		title: t.title,
+		done: t.done,
+		taskData: t,
+	}))
+	const googleItems: CalendarDisplayItem[] = googleEventsForDay(date).map(e => ({
+		type: 'google' as const,
+		id: e.id,
+		title: e.title,
+	}))
+	return [...taskItems, ...googleItems]
+}
+
+async function fetchGoogleEvents() {
+	if (!googleCalendarEnabled.value) return
+	const month = `${displayYear.value}-${String(displayMonth.value + 1).padStart(2, '0')}`
+	try {
+		googleEvents.value = await googleService.getEvents(props.projectId, props.viewId, month)
+	} catch {
+		googleEvents.value = []
+	}
+}
+
+watch([displayYear, displayMonth], fetchGoogleEvents, {immediate: true})
 </script>
 
 <style lang="scss" scoped>
@@ -486,6 +576,12 @@ async function toggleDone(task: ITask) {
 			color: var(--grey-600);
 			cursor: default;
 		}
+
+		&.is-google {
+			background: #e8f0fe;
+			color: #1a73e8;
+			cursor: default;
+		}
 	}
 }
 
@@ -534,6 +630,17 @@ async function toggleDone(task: ITask) {
 		&:hover {
 			text-decoration: underline;
 		}
+	}
+
+	&__google-badge {
+		font-size: .7rem;
+		font-weight: 600;
+		padding: 1px 6px;
+		border-radius: 9999px;
+		background: #e8f0fe;
+		color: #1a73e8;
+		white-space: nowrap;
+		flex-shrink: 0;
 	}
 }
 

@@ -544,6 +544,7 @@
       "today": "Today",
       "noTasks": "No tasks due on this day",
       "noDueDate": "No Due Date",
+      "googleSource": "Google",
       "addTask": "Add task for {date}",
       "weekdays": {
         "0": "Sun",
