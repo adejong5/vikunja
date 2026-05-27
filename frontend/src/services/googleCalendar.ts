@@ -1,4 +1,5 @@
 import {AuthenticatedHTTPFactory} from '@/helpers/fetcher'
+import {objectToCamelCase, objectToSnakeCase} from '@/helpers/case'
 
 export interface GoogleCalendarStatus {
 	enabled: boolean
@@ -27,7 +28,7 @@ export default class GoogleCalendarService {
 
 	async getStatus(): Promise<GoogleCalendarStatus> {
 		const {data} = await this.http.get<GoogleCalendarStatus>('/user/settings/google')
-		return data
+		return objectToCamelCase(data) as GoogleCalendarStatus
 	}
 
 	async getAuthUrl(): Promise<string> {
@@ -36,7 +37,7 @@ export default class GoogleCalendarService {
 	}
 
 	async updateSettings(settings: GoogleCalendarSettings): Promise<void> {
-		await this.http.patch('/user/settings/google', settings)
+		await this.http.patch('/user/settings/google', objectToSnakeCase(settings))
 	}
 
 	async unlink(): Promise<void> {
@@ -48,6 +49,6 @@ export default class GoogleCalendarService {
 			`/projects/${projectId}/views/${viewId}/google-events`,
 			{params: {month}},
 		)
-		return data ?? []
+		return (data ?? []).map(e => objectToCamelCase(e) as GoogleCalendarEvent)
 	}
 }
