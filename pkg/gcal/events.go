@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"time"
 
 	"code.vikunja.io/api/pkg/log"
@@ -111,6 +112,11 @@ func FetchEventsForMonth(userID int64, year int, month time.Month) ([]Event, err
 		}
 		all = append(all, events...)
 	}
+
+	sort.Slice(all, func(i, j int) bool {
+		return all[i].Start.Before(all[j].Start)
+	})
+
 	return all, nil
 }
 
