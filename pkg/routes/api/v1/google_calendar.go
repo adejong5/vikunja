@@ -18,10 +18,15 @@ package v1
 
 import (
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/labstack/echo/v5"
 
+	auth2 "code.vikunja.io/api/pkg/modules/auth"
+
 	"code.vikunja.io/api/pkg/config"
+	"code.vikunja.io/api/pkg/db"
 	"code.vikunja.io/api/pkg/gcal"
 	"code.vikunja.io/api/pkg/models"
 	user2 "code.vikunja.io/api/pkg/user"
@@ -215,4 +220,86 @@ func UnlinkGoogleCalendar(c *echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, &models.Message{Message: "Google Calendar unlinked."})
+}
+
+// GetGoogleCalendarEvents returns Google Calendar events for a project view's month.
+// The Google API call is made server-side; no OAuth token is ever returned to the client.
+//
+// @Summary Get Google Calendar events for a month
+// @Description Fetches events from the user's Google Calendar for the given month and returns them as a read-only overlay. Requires the user to have linked their Google account and enabled show_in_vikunja.
+// @tags project
+// @Produce json
+// @Security JWTKeyAuth
+// @Param project path int true "Project ID"
+// @Param view path int true "View ID"
+// @Param month query string true "Month in YYYY-MM format"
+// @Success 200 {array} gcal.Event
+// @Failure 400 {object} models.Message "Invalid project ID, view ID, or month."
+// @Failure 403 {object} models.Message "No read access to this project."
+// @Failure 500 {object} models.Message "Internal server error."
+// @Router /projects/{project}/views/{view}/google-events [get]
+func GetGoogleCalendarEvents(c *echo.Context) error {
+	if !config.GoogleCalendarEnable.GetBool() {
+		return c.JSON(http.StatusOK, []gcal.Event{})
+	}
+
+	// Parse and authorize the project.
+	projectID, err := strconv.ParseInt(c.Param("project"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID.")
+	}
+
+	project := &models.Project{ID: projectID}
+	a, err := auth2.GetAuthFromClaims(c)
+	if err != nil {
+		return err
+	}
+
+	s := db.NewSession()
+	defer s.Close()
+
+	canRead, _, err := project.CanRead(s, a)
+	if err != nil {
+		_ = s.Rollback()
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).Wrap(err)
+	}
+	if !canRead {
+		return echo.ErrForbidden
+	}
+
+	// Resolve the current user from the auth claims.
+	u, err := user2.GetCurrentUser(c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).Wrap(err)
+	}
+
+	// Check the user has linked Google and enabled the import.
+	token, err := gcal.GetToken(u.ID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).Wrap(err)
+	}
+	if token == nil || !token.ShowInVikunja {
+		return c.JSON(http.StatusOK, []gcal.Event{})
+	}
+
+	// Parse month parameter (YYYY-MM).
+	monthStr := c.QueryParam("month")
+	if monthStr == "" {
+		now := time.Now()
+		monthStr = now.Format("2006-01")
+	}
+	t, err := time.Parse("2006-01", monthStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "month must be in YYYY-MM format.")
+	}
+
+	events, err := gcal.FetchEventsForMonth(u.ID, t.Year(), t.Month())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).Wrap(err)
+	}
+
+	if events == nil {
+		events = []gcal.Event{}
+	}
+	return c.JSON(http.StatusOK, events)
 }
