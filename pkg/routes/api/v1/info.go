@@ -48,6 +48,7 @@ type vikunjaInfos struct {
 	TotpEnabled                bool              `json:"totp_enabled"`
 	Legal                      legalInfo         `json:"legal"`
 	CaldavEnabled              bool              `json:"caldav_enabled"`
+	GoogleCalendarEnabled      bool              `json:"google_calendar_enabled"`
 	AuthInfo                   authInfo          `json:"auth"`
 	EmailRemindersEnabled      bool              `json:"email_reminders_enabled"`
 	UserDeletionEnabled        bool              `json:"user_deletion_enabled"`
@@ -101,6 +102,7 @@ func Info(c *echo.Context) error {
 		TaskAttachmentsEnabled: config.ServiceEnableTaskAttachments.GetBool(),
 		TotpEnabled:            config.ServiceEnableTotp.GetBool(),
 		CaldavEnabled:          config.ServiceEnableCaldav.GetBool(),
+		GoogleCalendarEnabled:  config.GoogleCalendarEnable.GetBool(),
 		EmailRemindersEnabled:  config.ServiceEnableEmailReminders.GetBool(),
 		UserDeletionEnabled:    config.ServiceEnableUserDeletion.GetBool(),
 		TaskCommentsEnabled:    config.ServiceEnableTaskComments.GetBool(),

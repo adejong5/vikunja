@@ -22,6 +22,7 @@ const authStore = useAuthStore()
 
 const totpEnabled = computed(() => configStore.totpEnabled)
 const caldavEnabled = computed(() => configStore.caldavEnabled)
+const googleCalendarEnabled = computed(() => configStore.googleCalendarEnabled)
 const migratorsEnabled = computed(() => configStore.migratorsEnabled)
 const isLocalUser = computed(() => authStore.info?.isLocalUser)
 const userDeletionEnabled = computed(() => configStore.userDeletionEnabled)
@@ -66,6 +67,11 @@ const navigationItems = computed(() => {
 			title: t('user.settings.caldav.title'),
 			routeName: 'user.settings.caldav',
 			condition: caldavEnabled.value,
+		},
+		{
+			title: t('user.settings.googleCalendar.title'),
+			routeName: 'user.settings.google',
+			condition: googleCalendarEnabled.value,
 		},
 		{
 			title: t('user.settings.feeds.title'),

@@ -113,6 +113,17 @@ const router = createRouter({
 					},
 				},
 				{
+					path: '/user/settings/google',
+					name: 'user.settings.google',
+					component: () => import('@/views/user/settings/GoogleCalendar.vue'),
+					beforeEnter: async () => {
+						const {useConfigStore} = await import('@/stores/config')
+						if (!useConfigStore().googleCalendarEnabled) {
+							return {name: 'user.settings.general'}
+						}
+					},
+				},
+				{
 					path: '/user/settings/data-export',
 					name: 'user.settings.data-export',
 					component: () => import('@/views/user/settings/DataExport.vue'),

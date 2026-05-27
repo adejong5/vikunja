@@ -206,6 +206,22 @@
         "confirmSuccess": "You've successfully enabled two factor authentication!",
         "disableSuccess": "Two factor authentication was successfully disabled."
       },
+      "googleCalendar": {
+        "title": "Google Calendar",
+        "linkAccount": "Link Google Account",
+        "unlinkAccount": "Unlink Google Account",
+        "linked": "Google account linked",
+        "notLinked": "No Google account linked",
+        "linkedSince": "Linked since {date}",
+        "showInVikunja": "Show Google Calendar events in Vikunja",
+        "showInVikunjaHint": "Google Calendar events will appear in Calendar views alongside your tasks.",
+        "showVikunjaInGoogle": "Show Vikunja tasks in Google Calendar",
+        "showVikunjaInGoogleHint": "Coming soon — Vikunja tasks will be pushed to your Google Calendar.",
+        "linkSuccess": "Google account linked successfully.",
+        "unlinkSuccess": "Google account unlinked.",
+        "settingsSaved": "Google Calendar settings saved.",
+        "notEnabled": "Google Calendar integration is not enabled on this instance."
+      },
       "caldav": {
         "title": "CalDAV",
         "howTo": "You can connect Vikunja to CalDAV clients to view and manage all your tasks from different clients. Enter this URL into your client:",
