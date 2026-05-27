@@ -72,7 +72,7 @@ func initDB() error {
 		return fmt.Errorf("gcal: open token database: %w", err)
 	}
 
-	engine.SetMapper(names.SnakeMapper{})
+	engine.SetMapper(names.GonicMapper{})
 	engine.SetLogger(log.NewXormLogger(false, "stdout", "WARNING", "text"))
 
 	if err = engine.Sync2(new(UserToken)); err != nil {
