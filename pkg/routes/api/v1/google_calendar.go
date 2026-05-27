@@ -222,6 +222,55 @@ func UnlinkGoogleCalendar(c *echo.Context) error {
 	return c.JSON(http.StatusOK, &models.Message{Message: "Google Calendar unlinked."})
 }
 
+// GetGoogleCalendarEventsForUser returns Google Calendar events for the current user's linked account.
+// Unlike the project-scoped endpoint this requires no project context and is used by the all-projects calendar view.
+//
+// @Summary Get Google Calendar events for a month (user-scoped)
+// @tags user
+// @Produce json
+// @Security JWTKeyAuth
+// @Param month query string false "Month in YYYY-MM format (defaults to current month)"
+// @Success 200 {array} gcal.Event
+// @Failure 500 {object} models.Message
+// @Router /user/settings/google/events [get]
+func GetGoogleCalendarEventsForUser(c *echo.Context) error {
+	if !config.GoogleCalendarEnable.GetBool() {
+		return c.JSON(http.StatusOK, []gcal.Event{})
+	}
+
+	u, err := user2.GetCurrentUser(c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).Wrap(err)
+	}
+
+	token, err := gcal.GetToken(u.ID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).Wrap(err)
+	}
+	if token == nil || !token.ShowInVikunja {
+		return c.JSON(http.StatusOK, []gcal.Event{})
+	}
+
+	monthStr := c.QueryParam("month")
+	if monthStr == "" {
+		monthStr = time.Now().Format("2006-01")
+	}
+	t, err := time.Parse("2006-01", monthStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "month must be in YYYY-MM format.")
+	}
+
+	events, err := gcal.FetchEventsForMonth(u.ID, t.Year(), t.Month())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error()).Wrap(err)
+	}
+
+	if events == nil {
+		events = []gcal.Event{}
+	}
+	return c.JSON(http.StatusOK, events)
+}
+
 // GetGoogleCalendarEvents returns Google Calendar events for a project view's month.
 // The Google API call is made server-side; no OAuth token is ever returned to the client.
 //

@@ -468,6 +468,7 @@ func registerAPIRoutes(a *echo.Group) {
 	// Google Calendar integration
 	u.GET("/settings/google", apiv1.GetGoogleCalendarStatus)
 	u.GET("/settings/google/auth-url", apiv1.GetGoogleCalendarAuthURL)
+	u.GET("/settings/google/events", apiv1.GetGoogleCalendarEventsForUser)
 	u.PATCH("/settings/google", apiv1.UpdateGoogleCalendarSettings)
 	u.DELETE("/settings/google", apiv1.UnlinkGoogleCalendar)
 

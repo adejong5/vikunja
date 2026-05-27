@@ -51,4 +51,12 @@ export default class GoogleCalendarService {
 		)
 		return (data ?? []).map(e => objectToCamelCase(e) as GoogleCalendarEvent)
 	}
+
+	async getUserEvents(month: string): Promise<GoogleCalendarEvent[]> {
+		const {data} = await this.http.get<GoogleCalendarEvent[]>(
+			'/user/settings/google/events',
+			{params: {month}},
+		)
+		return (data ?? []).map(e => objectToCamelCase(e) as GoogleCalendarEvent)
+	}
 }

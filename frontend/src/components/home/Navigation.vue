@@ -40,6 +40,17 @@
 				</li>
 				<li>
 					<RouterLink
+						v-shortcut="'KeyG KeyC'"
+						:to="{ name: 'calendar.all'}"
+					>
+						<span class="menu-item-icon icon">
+							<Icon icon="calendar-days" />
+						</span>
+						{{ $t('navigation.calendar') }}
+					</RouterLink>
+				</li>
+				<li>
+					<RouterLink
 						v-shortcut="'KeyG KeyP'"
 						:to="{ name: 'projects.index'}"
 					>
