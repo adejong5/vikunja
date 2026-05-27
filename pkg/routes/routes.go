@@ -316,7 +316,8 @@ var unauthenticatedAPIPaths = map[string]bool{
 	"/api/v1/user/confirm":                   true,
 	"/api/v1/login":                          true,
 	"/api/v1/user/token/refresh":             true,
-	"/api/v1/auth/openid/:provider/callback": true,
+	"/api/v1/auth/openid/:provider/callback":      true,
+	"/api/v1/user/settings/google/callback":        true,
 	"/api/v1/test/:table":                    true,
 	"/api/v1/info":                           true,
 	"/api/v1/shares/:share/auth":             true,
@@ -402,6 +403,10 @@ func registerAPIRoutes(a *echo.Group) {
 		ur.POST("/auth/openid/:provider/callback", openid.HandleCallback)
 	}
 
+	if config.GoogleCalendarEnable.GetBool() {
+		ur.GET("/user/settings/google/callback", apiv1.HandleGoogleCalendarCallback)
+	}
+
 	// OAuth 2.0 token endpoint — unauthenticated because it validates
 	// credentials (authorization code or refresh token) itself.
 	ur.POST("/oauth/token", oauth2server.HandleToken)
@@ -459,6 +464,12 @@ func registerAPIRoutes(a *echo.Group) {
 	u.PUT("/settings/token/caldav", apiv1.GenerateCaldavToken)
 	u.GET("/settings/token/caldav", apiv1.GetCaldavTokens)
 	u.DELETE("/settings/token/caldav/:id", apiv1.DeleteCaldavToken)
+
+	// Google Calendar integration
+	u.GET("/settings/google", apiv1.GetGoogleCalendarStatus)
+	u.GET("/settings/google/auth-url", apiv1.GetGoogleCalendarAuthURL)
+	u.PATCH("/settings/google", apiv1.UpdateGoogleCalendarSettings)
+	u.DELETE("/settings/google", apiv1.UnlinkGoogleCalendar)
 
 	sessionProvider := &handler.WebHandler{
 		EmptyStruct: func() handler.CObject {

@@ -24,6 +24,7 @@ import (
 	"code.vikunja.io/api/pkg/db"
 	"code.vikunja.io/api/pkg/events"
 	"code.vikunja.io/api/pkg/files"
+	"code.vikunja.io/api/pkg/gcal"
 	"code.vikunja.io/api/pkg/i18n"
 	"code.vikunja.io/api/pkg/license"
 	"code.vikunja.io/api/pkg/log"
@@ -75,6 +76,12 @@ func InitEngines() {
 	err = db.CreateParadeDBIndexes()
 	if err != nil {
 		log.Fatal(err.Error())
+	}
+
+	if config.GoogleCalendarEnable.GetBool() {
+		if err = gcal.InitDB(); err != nil {
+			log.Fatalf("Could not initialise Google Calendar token database: %s", err)
+		}
 	}
 }
 

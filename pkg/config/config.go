@@ -183,6 +183,13 @@ const (
 	MigrationMicrosoftTodoClientSecret Key = `migration.microsofttodo.clientsecret`
 	MigrationMicrosoftTodoRedirectURL  Key = `migration.microsofttodo.redirecturl`
 
+	GoogleCalendarEnable        Key = `googlecalendar.enable`
+	GoogleCalendarClientID      Key = `googlecalendar.clientid`
+	GoogleCalendarClientSecret  Key = `googlecalendar.clientsecret`
+	GoogleCalendarEncryptionKey Key = `googlecalendar.encryptionkey`
+	GoogleCalendarDBPath        Key = `googlecalendar.dbpath`
+	GoogleCalendarRedirectURL   Key = `googlecalendar.redirecturl`
+
 	CorsEnable  Key = `cors.enable`
 	CorsOrigins Key = `cors.origins`
 	CorsMaxAge  Key = `cors.maxage`
@@ -456,6 +463,13 @@ func InitDefaultConfig() {
 	FilesS3UsePathStyle.setDefault(false)
 	FilesS3DisableSigning.setDefault(false)
 	FilesS3TempDir.setDefault("")
+	// Google Calendar
+	GoogleCalendarEnable.setDefault(false)
+	GoogleCalendarClientID.setDefault("")
+	GoogleCalendarClientSecret.setDefault("")
+	GoogleCalendarEncryptionKey.setDefault("")
+	GoogleCalendarDBPath.setDefault(ResolvePath("google-tokens.db"))
+	GoogleCalendarRedirectURL.setDefault("")
 	// Cors
 	CorsEnable.setDefault(true)
 	CorsOrigins.setDefault([]string{"http://127.0.0.1:*", "http://localhost:*"})
@@ -687,6 +701,10 @@ func InitConfig() {
 		if parsed.Scheme != "http" && parsed.Scheme != "https" {
 			log.Fatalf("service.publicurl must include http:// or https:// scheme, got: %s", ServicePublicURL.GetString())
 		}
+	}
+
+	if GoogleCalendarRedirectURL.GetString() == "" {
+		GoogleCalendarRedirectURL.Set(ServicePublicURL.GetString() + "api/v1/user/settings/google/callback")
 	}
 
 	if MigrationTodoistRedirectURL.GetString() == "" {
